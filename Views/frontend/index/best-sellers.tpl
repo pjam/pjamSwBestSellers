@@ -2,6 +2,8 @@
     .pjamBestSellersList .list .articleLine {
         padding: 10px 5px;
         border-bottom: 1px dotted #dadae5;
+        display: block;
+        color: #5f7285;
     }
     .pjamBestSellersList .list .articleLine:hover {
         background-color: rgba(243, 89, 36, 0.08);
@@ -32,12 +34,12 @@
   <div class="panel--title is--underline">Best Sellers</div>
   <div class="list">
     {foreach key=aid item=art from=$articles}
-    <div class="articleLine">
+    <a class="articleLine" href="{$art.link}" title="{$art.name}">
       <div class="articleImage">
         <img src="{$art.image}" title="{$art.name}" />
       </div>
       <div class="articleName">{$art.name}</div>
-    </div>
+    </a>
     {foreachelse}
       There are no sales registered for the given period
     {/foreach}

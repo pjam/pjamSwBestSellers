@@ -52,6 +52,7 @@
           $articleData['name'] = $b['name'];
           $articleImages = Shopware()->Modules()->Articles()->sGetArticlePictures($b['id'], true);
           $articleData['image'] = $articleImages['src'][0];
+          $articleData['link'] = Shopware()->Modules()->Core()->sRewriteLink($args->getRequest()->getBaseUrl() . "?sViewport=detail&sArticle=" . $b['id'], $b['name']);
           $articles[] = $articleData;
         }
         
@@ -100,7 +101,7 @@
         if ($articleCount !== null) {
             $sql = Shopware()->Db()->limit($sql, $articleCount);
         }
-        echo "|" . $period . "|" . $this->getMinimumDate($period) . "|";
+
         $articles = Shopware()->Db()->executeQuery($sql, array(
             'minimumDate' => $this->getMinimumDate($period)
         ));
