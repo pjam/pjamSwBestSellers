@@ -36,17 +36,26 @@
     public function onFrontendPostDispatch(Enlight_Event_EventArgs $args)
     {
         /** @var \Enlight_Controller_Action $controller */
-//        $controller = $args->get('subject');
-//        $view = $controller->View();
-//
-//        $view->addTemplateDir(
-//            __DIR__ . '/Views'
-//        );
-//
-//        $view->assign('slogan', $this->getSlogan());
-//        $view->assign('sloganSize', $this->Config()->get('font-size'));
-//        $view->assign('italic', $this->Config()->get('italic'));
+        $controller = $args->get('subject');
+        $view = $controller->View();
 
+        $view->addTemplateDir(
+            __DIR__ . '/Views'
+        );
+        
+        $bestSellers = $this->getBestSellers($this->Config()->get('timePeriod'), $this->Config()->get('listCount'));
+        
+        $articles = array();
+        
+        foreach( $bestSellers as $b )
+        {
+          $articleData['name'] = $b['name'];
+          $articleImages = Shopware()->Modules()->Articles()->sGetArticlePictures($b['id'], true);
+          $articleData['image'] = $articleImages['src'][0];
+          $articles[] = $articleData;
+        }
+        
+        $view->assign('articles', $articles);
     }
     
     private function createConfig()
@@ -66,11 +75,49 @@
             )
         );
 
-        $this->Form()->setElement('number', 'listCount', array(
-            'value' => 5,
-            'label' => 'Article Count',
-            'required' => true,
-            'description' => 'Number of articles to be shown in the list'
+        $this->Form()->setElement(
+            'number', 
+            'listCount', 
+            array(
+                'value' => 5,
+                'label' => 'Article Count',
+                'required' => true,
+                'description' => 'Number of articles to be shown in the list'
+            )
+        );
+    }
+    
+    private function getBestSellers($period, $articleCount)
+    {
+        $sql = "SELECT a.id, a.name, SUM(od.quantity) as sellCount "
+                . "FROM s_articles a "
+                . "LEFT JOIN s_order_details od ON a.id = od.articleID "
+                . "LEFT JOIN s_order o ON o.id = od.orderID "
+                . "WHERE a.active = 1 AND (o.status = 2 OR o.status = 7) AND o.ordertime >= :minimumDate "
+                . "GROUP BY a.id "
+                . "ORDER BY sellCount DESC";
+
+        if ($articleCount !== null) {
+            $sql = Shopware()->Db()->limit($sql, $articleCount);
+        }
+        echo "|" . $period . "|" . $this->getMinimumDate($period) . "|";
+        $articles = Shopware()->Db()->executeQuery($sql, array(
+            'minimumDate' => $this->getMinimumDate($period)
         ));
+        
+        return $articles;
+    }
+    
+    private function getMinimumDate($period) 
+    {
+      $minimumDate = new DateTime();
+      if( 'day' == $period )
+        $interval = new DateInterval ('PT24H');
+      else if( 'week' == $period )
+        $interval = new DateInterval ('P1W');
+      else if( 'month' == $period )
+        $interval = new DateInterval ('P1M');
+      
+      return $minimumDate->sub($interval)->format('Y-m-d H:i:s');
     }
  }
